@@ -22,6 +22,19 @@ export interface NutritionEntry {
   raw: any;
 }
 
+const CALORIE_TOLERANCE = 10;
+
+export function validateCalories(
+  protein: number,
+  carbs: number,
+  fat: number,
+  calories: number
+): { isValid: boolean; expected: number } {
+  const expected = protein * 4 + carbs * 4 + fat * 9;
+  const isValid = Math.abs(expected - calories) <= CALORIE_TOLERANCE;
+  return { isValid, expected };
+}
+
 export const SourceASchema = z.object({
   entryId: z.string(),
   timestamp: z.string().datetime(),

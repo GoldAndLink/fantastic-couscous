@@ -1,10 +1,24 @@
 import React from "react";
 import { useNutritionEntries } from "./hooks";
 import { NutritionEntry } from "./schemas";
+import { AlertTriangle, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { clsx } from "clsx";
 
 function EntryCard({ entry }: { entry: NutritionEntry }) {
+  const confidenceColors = {
+    high: "border-green-200 bg-green-50 text-green-800",
+    medium: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    low: "border-red-200 bg-red-50 text-red-800",
+  };
+
+  const confidenceIcons = {
+    high: <CheckCircle2 className="w-4 h-4 text-green-500" />,
+    medium: <Info className="w-4 h-4 text-yellow-500" />,
+    low: <AlertTriangle className="w-4 h-4 text-red-500" />,
+  };
+
   return (
-    <div className="border rounded-lg p-4">
+    <div className={clsx("border rounded-lg p-4", confidenceColors[entry.confidence])}>
       <div className="flex justify-between items-start mb-2">
         <div>
           <h3 className="font-bold text-lg">{entry.name}</h3>
@@ -14,6 +28,7 @@ function EntryCard({ entry }: { entry: NutritionEntry }) {
         </div>
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-1 font-medium">
+            {confidenceIcons[entry.confidence]}
             <span className="capitalize">{entry.confidence} Confidence</span>
           </div>
           <p className="text-xl font-bold mt-1">{Math.round(entry.calories)} kcal</p>
@@ -55,11 +70,23 @@ function EntryCard({ entry }: { entry: NutritionEntry }) {
 
 export default function App() {
   const results = useNutritionEntries();
+  const isLoading = results.some((r) => r.isLoading);
   const isError = results.some((r) => r.isError);
 
   const allEntries = results
     .flatMap((r) => r.data || [])
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  if (isLoading && allEntries.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-slate-500 font-medium">Fetching data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
@@ -69,8 +96,8 @@ export default function App() {
         </header>
 
         {isError && (
-          <div className="mb-6 p-4 rounded-lg text-red-800">
-            <p>Error</p>
+          <div className="mb-6 p-4 bg-red-100 border border-red-200 rounded-lg text-red-800">
+            <p>Some sources failed to load. The list below might be incomplete.</p>
           </div>
         )}
 
@@ -78,9 +105,14 @@ export default function App() {
           {allEntries.map((entry) => (
             <EntryCard key={entry.id} entry={entry} />
           ))}
+
+          {allEntries.length === 0 && !isLoading && (
+            <div className="text-center py-12 text-slate-400">
+              No entries found.
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
